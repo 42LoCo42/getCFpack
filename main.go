@@ -77,27 +77,41 @@ func main() {
 	ctx.
 		SetHeader("Accept", "application/json").
 		SetHeader("x-api-key", strings.TrimSpace(string(key)))
+	var file string
+	file = packID
+	var packDir string
+	if !strings.Contains(packID, ".zip") {
+		// get pack URL
+		packURL, err := ctx.getProjectURL(packID)
+		if err != nil {
+			panic(err)
+		}
+		log.Print("Pack URL is ", packURL)
 
-	// get pack URL
-	packURL, err := ctx.getProjectURL(packID)
-	if err != nil {
-		panic(err)
+		// download pack
+		file := path.Base(packURL)
+		if err := downloadFileTo(packURL, file); err != nil {
+			panic(err)
+		}
+	
+		// extract pack
+		log.Print(file)
+		packDir = strings.TrimSuffix(file, ".zip")
+		log.Print("Extracting to directory ", packDir)
+		if err := unzip(file, packDir); err != nil {
+			panic(err)
+		}
+		os.Remove(file)
+	} else {
+		// extract pack
+        	log.Print(file)
+        	packDir = strings.TrimSuffix(packID, ".zip")
+        	log.Print("Extracting to directory ", packDir)
+        	if err := unzip(file, packDir); err != nil {
+                	panic(err)
+        	}
+        	os.Remove(file)
 	}
-	log.Print("Pack URL is ", packURL)
-
-	// download pack
-	file := path.Base(packURL)
-	if err := downloadFileTo(packURL, file); err != nil {
-		panic(err)
-	}
-
-	// extract pack
-	packDir := strings.TrimSuffix(file, ".zip")
-	log.Print("Extracting to directory ", packDir)
-	if err := unzip(file, packDir); err != nil {
-		panic(err)
-	}
-	os.Remove(file)
 
 	// read manifest
 	rawManifest, err := ioutil.ReadFile(path.Join(packDir, "manifest.json"))
